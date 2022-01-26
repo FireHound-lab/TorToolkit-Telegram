@@ -43,18 +43,14 @@ async def upload_handel(path,message,from_uid,files_dict,job_id=0,force_edit=Fal
             message = await message.edit("{}\nFound **{}** files for this download.".format(message.text,len(directory_contents)))
         except:
             torlog.warning("Too much folders will stop the editing of this message")
-        
+
         if not from_in:
             updb.register_upload(message.chat_id,message.id)
-            if user_msg is None:
-                sup_mes = await message.get_reply_message()
-            else:
-                sup_mes = user_msg
-            
+            sup_mes = await message.get_reply_message() if user_msg is None else user_msg
             if task is not None:
                 await task.set_message(message)
                 await task.set_original_message(sup_mes)
-            
+
             data = "upcancel {} {} {}".format(message.chat_id,message.id,sup_mes.sender_id)
             buts = [KeyboardButtonCallback("Cancel upload.",data.encode("UTF-8"))]
             message = await message.edit(buttons=buts)
@@ -77,7 +73,7 @@ async def upload_handel(path,message,from_uid,files_dict,job_id=0,force_edit=Fal
                 user_msg=user_msg,
                 task=task
             )
-        
+
         if not from_in:
             if updb.get_cancel_status(message.chat_id,message.id):
                 task.cancel = True
@@ -91,10 +87,10 @@ async def upload_handel(path,message,from_uid,files_dict,job_id=0,force_edit=Fal
         logging.info("Uploading the file:- {}".format(path))
         if os.path.getsize(path) > get_val("TG_UP_LIMIT"):
             # the splitted file will be considered as a single upload ;)
-            
-            
+
+
             metadata = extractMetadata(createParser(path))
-            
+
             if metadata is not None:
                 # handle none for unknown
                 metadata = metadata.exportDictionary()
@@ -107,29 +103,23 @@ async def upload_handel(path,message,from_uid,files_dict,job_id=0,force_edit=Fal
                 ftype = ftype.lower().strip()
             else:
                 ftype = "unknown"
-            
+
             if ftype == "video":    
-                todel = await message.reply("**FILE LAGRE THEN THRESHOLD, SPLITTING NOW...**\n`Using Algo FFMPEG VIDEO SPLIT`") 
+                todel = await message.reply("**FILE LAGRE THEN THRESHOLD, SPLITTING NOW...**\n`Using Algo FFMPEG VIDEO SPLIT`")
                 split_dir = await vids_helpers.split_file(path,get_val("TG_UP_LIMIT"))
-                await todel.delete()
             else:
-                todel = await message.reply("**FILE LAGRE THEN THRESHOLD, SPLITTING NOW...**\n`Using Algo FFMPEG ZIP SPLIT`") 
+                todel = await message.reply("**FILE LAGRE THEN THRESHOLD, SPLITTING NOW...**\n`Using Algo FFMPEG ZIP SPLIT`")
                 split_dir = await zip7_utils.split_in_zip(path,get_val("TG_UP_LIMIT"))
-                await todel.delete()
-            
+            await todel.delete()
             if task is not None:
                 await task.add_a_dir(split_dir)
-            
+
             dircon = os.listdir(split_dir)
             dircon.sort()
 
             if not from_in:
                 updb.register_upload(message.chat_id,message.id)
-                if user_msg is None:
-                    sup_mes = await message.get_reply_message()
-                else:
-                    sup_mes = user_msg
-
+                sup_mes = await message.get_reply_message() if user_msg is None else user_msg
                 if task is not None:
                     await task.set_message(message)
                     await task.set_original_message(sup_mes)
@@ -141,7 +131,7 @@ async def upload_handel(path,message,from_uid,files_dict,job_id=0,force_edit=Fal
             for file in dircon:
                 if updb.get_cancel_status(message.chat_id,message.id):
                     continue
-            
+
                 await upload_handel(
                     os.path.join(split_dir,file),
                     message,
@@ -155,12 +145,12 @@ async def upload_handel(path,message,from_uid,files_dict,job_id=0,force_edit=Fal
                     user_msg=user_msg,
                     task=task
                 )
-            
+
             try:
                 shutil.rmtree(split_dir)
                 os.remove(path)
             except:pass
-            
+
             if not from_in:
                 if updb.get_cancel_status(message.chat_id,message.id):
                     task.cancel = True
@@ -169,15 +159,11 @@ async def upload_handel(path,message,from_uid,files_dict,job_id=0,force_edit=Fal
                 else:
                     await message.edit(buttons=None)
                 updb.deregister_upload(message.chat_id,message.id)
-            # spliting file logic blah blah
+                    # spliting file logic blah blah
         else:
             if not from_in:
                 updb.register_upload(message.chat_id,message.id)
-                if user_msg is None:
-                    sup_mes = await message.get_reply_message()
-                else:
-                    sup_mes = user_msg
-                
+                sup_mes = await message.get_reply_message() if user_msg is None else user_msg
                 if task is not None:
                     await task.set_message(message)
                     await task.set_original_message(sup_mes)

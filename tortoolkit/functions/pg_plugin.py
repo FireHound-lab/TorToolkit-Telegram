@@ -12,14 +12,10 @@ class DataBaseHandle:
         """Load the DB URL if available
         """
         self._dburl = dburl
-        if isinstance(self._dburl,bool):
-            self._block = True
-        else:
-            self._block = False
-        
+        self._block = isinstance(self._dburl,bool)
         if self._block:
             return
-        
+
         if self._active_connections:
             self._conn = self._active_connections[0]
             self._connection_users.append(1)
@@ -32,19 +28,19 @@ class DataBaseHandle:
     def scur(self, dictcur=False):
         # start cursor
         cur = None
-        for i in range(0,5):
+        for i in range(5):
             try:
                 if dictcur:
                     cur = self._conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
                 else:
                     cur = self._conn.cursor()
-                
+
                 break
             except psycopg2.InterfaceError:
                 torlog.info(f"Attempting to Re-establish the connection to server {i} times.")
                 self.re_establish()
 
-        
+
         return cur
 
     def re_establish(self):

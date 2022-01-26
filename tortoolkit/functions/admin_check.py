@@ -11,11 +11,7 @@ torlog = logging.getLogger(__name__)
 
 async def is_admin(client,user_id,chat_id, force_owner=False):
     if force_owner:
-        if user_id == get_val("OWNER_ID"):
-            return True
-        else:
-            return False
-        
+        return user_id == get_val("OWNER_ID")
     try:
         res = await client(GetParticipantRequest(
             channel=chat_id,
@@ -27,16 +23,10 @@ async def is_admin(client,user_id,chat_id, force_owner=False):
                 return True
             else:
                 
-                if user_id in get_val("ALD_USR"):
-                    return True
-                else:
-                    return False
+                return user_id in get_val("ALD_USR")
         except:
             torlog.info("Bot Accessed in Private {}".format(traceback.format_exc()))
             return False
     except Exception as e:
         torlog.info("Bot Accessed in Private {}".format(e))
-        if user_id in get_val("ALD_USR"):
-            return True
-        else:
-            return False
+        return user_id in get_val("ALD_USR")

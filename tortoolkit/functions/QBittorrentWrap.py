@@ -201,7 +201,7 @@ async def update_progress(client,message,torrent,task,except_retry=0,sleepsec=No
             await task.set_inactive()
             await message.edit("Torrent canceled ```{}``` ".format(torrent.name),buttons=None)
             return True
-        
+
         if tor_info.size > (get_val("MAX_TORRENT_SIZE") * 1024 * 1024 * 1024):
             await message.edit("Torrent oversized max size is {}. Try adding again and choose less files to download.".format(get_val("MAX_TORRENT_SIZE")), buttons=None)
             await delete_this(tor_info.hash)
@@ -217,12 +217,12 @@ async def update_progress(client,message,torrent,task,except_retry=0,sleepsec=No
                 is_meta = False
 
             if (is_meta and (time.time() - meta_time) > get_val("TOR_MAX_TOUT")):
-                
+
                 await message.edit("Torrent <code>{}</code> is DEAD. [Metadata Failed]".format(tor_info.name),buttons=None,parse_mode="html")
                 torlog.error("An torrent has no seeds clearing that torrent now. Torrent:- {} - {}".format(tor_info.hash,tor_info.name))
                 await delete_this(tor_info.hash)
                 await task.set_inactive("Torrent <code>{}</code> is DEAD. [Metadata Failed]".format(tor_info.name))
-                
+
                 return False
 
             try:
@@ -232,9 +232,9 @@ async def update_progress(client,message,torrent,task,except_retry=0,sleepsec=No
                     torlog.error("An torrent has error clearing that torrent now. Torrent:- {} - {}".format(tor_info.hash,tor_info.name))
                     await delete_this(tor_info.hash)
                     await task.set_inactive("Torrent <code>{}</code> errored out.".format(tor_info.name))
-                    
+
                     return False
-                
+
                 #aio timeout have to switch to global something
                 await aio.sleep(sleepsec)
 
@@ -258,13 +258,9 @@ async def update_progress(client,message,torrent,task,except_retry=0,sleepsec=No
                     await task.set_done()
                     await message.edit("Download completed: `{}` - (`{}`)\nTo path: `{}`".format(tor_info.name,human_readable_bytes(tor_info.total_size),tor_info.save_path),buttons=None)
                     return [savepath, task]
-                else:
-                    #return await update_progress(client,message,torrent)
-                    pass
-
             except (MessageNotModifiedError,FloodWaitError) as e:
                 torlog.error("{}".format(e))
-            
+
         except Exception as e:
             torlog.error("{}\n\n{}\n\nn{}".format(e,traceback.format_exc(),tor_info))
             try:
@@ -324,37 +320,31 @@ async def delete_this(ext_hash):
 async def get_status(message,all=False):
     client = await get_client()
     tors = await get_torrent_info(client)
-    olen = 0
-
     if len(tors) > 0:
         msg = ""
+        olen = 0
+
         for i in tors:
             if i.progress == 1 and not all:
                 continue
-            else:
-                olen += 1
-                msg += "📥 <b>{} | {}% | {}/{}({}) | {} | {} | S:{} | L:{} | {}</b>\n\n".format(
-                    i.name,
-                    round(i.progress*100,2),
-                    human_readable_bytes(i.completed),
-                    human_readable_bytes(i.size),
-                    human_readable_bytes(i.total_size),
-                    human_readable_bytes(i.dlspeed,postfix="/s"),
-                    human_readable_timedelta(i.eta),
-                    i.num_seeds,
-                    i.num_leechs,
-                    i.state
-                )
+            olen += 1
+            msg += "📥 <b>{} | {}% | {}/{}({}) | {} | {} | S:{} | L:{} | {}</b>\n\n".format(
+                i.name,
+                round(i.progress*100,2),
+                human_readable_bytes(i.completed),
+                human_readable_bytes(i.size),
+                human_readable_bytes(i.total_size),
+                human_readable_bytes(i.dlspeed,postfix="/s"),
+                human_readable_timedelta(i.eta),
+                i.num_seeds,
+                i.num_leechs,
+                i.state
+            )
         if msg.strip() == "":
-            return "No torrents running currently...." 
-        return msg
+            return "No torrents running currently...."
     else:
         msg = "No torrents running currently...."
-        return msg
-    
-    if olen == 0:
-        msg = "No torrents running currently...."
-        return msg
+    return msg
 
 
 
@@ -364,14 +354,7 @@ def progress_bar(percentage):
     #percentage is on the scale of 0-1
     comp = get_val("COMPLETED_STR")
     ncomp = get_val("REMAINING_STR")
-    pr = ""
-
-    for i in range(1,11):
-        if i <= int(percentage*10):
-            pr += comp
-        else:
-            pr += ncomp
-    return pr
+    return "".join(comp if i <= int(percentage*10) else ncomp for i in range(1,11))
 
 async def deregister_torrent(hashid):
     client = await get_client()
@@ -382,11 +365,7 @@ async def register_torrent(entity,message,user_msg=None,magnet=False,file=False)
 
     #refresh message
     message = await message.client.get_messages(message.chat_id,ids=message.id)
-    if user_msg is None:
-        omess = await message.get_reply_message()
-    else:
-        omess = user_msg
-
+    omess = await message.get_reply_message() if user_msg is None else user_msg
     if magnet:
         torlog.info(f"magnet :- {magnet}")
         torrent = await add_torrent_magnet(entity,message)
@@ -397,11 +376,11 @@ async def register_torrent(entity,message,user_msg=None,magnet=False,file=False)
             await message.edit("The provided torrent was already completly downloaded.")
             return True
         else:
-            
+
             pincode = randint(1000,9999)
             db = tor_db
             db.add_torrent(torrent.hash,pincode)
-            
+
             pincodetxt = f"getpin {torrent.hash} {omess.sender_id}"
 
             data = "torcancel {} {}".format(torrent.hash, omess.sender_id)
@@ -424,7 +403,7 @@ async def register_torrent(entity,message,user_msg=None,magnet=False,file=False)
             message = await message.edit(buttons=[KeyboardButtonCallback("Cancel Leech",data=data.encode("UTF-8"))])
 
             db.disable_torrent(torrent.hash)
-            
+
 
             task = QBTask(torrent, message, client)
             await task.set_original_mess(omess)
@@ -434,7 +413,7 @@ async def register_torrent(entity,message,user_msg=None,magnet=False,file=False)
         if isinstance(torrent,bool):
             return False
         torlog.info(torrent)
-        
+
         if torrent.progress == 1:
             await message.edit("The provided torrent was already completly downloaded.")
             return True
@@ -442,7 +421,7 @@ async def register_torrent(entity,message,user_msg=None,magnet=False,file=False)
             pincode = randint(1000,9999)
             db = tor_db
             db.add_torrent(torrent.hash,pincode)
-            
+
             pincodetxt = f"getpin {torrent.hash} {omess.sender_id}"
 
             data = "torcancel {} {}".format(torrent.hash, omess.sender_id)
@@ -466,7 +445,7 @@ async def register_torrent(entity,message,user_msg=None,magnet=False,file=False)
             message = await message.edit(buttons=[KeyboardButtonCallback("Cancel Leech",data=data.encode("UTF-8"))])
 
             db.disable_torrent(torrent.hash)
-            
+
             task = QBTask(torrent, message, client)
             await task.set_original_mess(omess)
             return await update_progress(client,message,torrent, task)

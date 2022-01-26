@@ -100,10 +100,7 @@ class QBTask(Status):
 
     async def central_message(self):
         cstate = await self.get_state()
-        if cstate is not None:
-            return cstate
-        else:
-            return await self.create_message()
+        return cstate if cstate is not None else await self.create_message()
 
     async def update_message(self):
         msg = await self.create_message()
@@ -155,14 +152,7 @@ class QBTask(Status):
         #percentage is on the scale of 0-1
         comp = get_val("COMPLETED_STR")
         ncomp = get_val("REMAINING_STR")
-        pr = ""
-
-        for i in range(1,11):
-            if i <= int(percentage*10):
-                pr += comp
-            else:
-                pr += ncomp
-        return pr
+        return "".join(comp if i <= int(percentage*10) else ncomp for i in range(1,11))
 
 
 class ARTask(Status):
@@ -301,14 +291,7 @@ class ARTask(Status):
         #percentage is on the scale of 0-1
         comp = get_val("COMPLETED_STR")
         ncomp = get_val("REMAINING_STR")
-        pr = ""
-
-        for i in range(1,11):
-            if i <= int(percentage*10):
-                pr += comp
-            else:
-                pr += ncomp
-        return pr
+        return "".join(comp if i <= int(percentage*10) else ncomp for i in range(1,11))
 
 class MegaDl(Status):
     
@@ -437,11 +420,4 @@ class MegaDl(Status):
         #percentage is on the scale of 0-1
         comp = get_val("COMPLETED_STR")
         ncomp = get_val("REMAINING_STR")
-        pr = ""
-
-        for i in range(1,11):
-            if i <= int(percentage*10):
-                pr += comp
-            else:
-                pr += ncomp
-        return pr
+        return "".join(comp if i <= int(percentage*10) else ncomp for i in range(1,11))
